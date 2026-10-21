@@ -46,4 +46,22 @@ export interface AppData {
   recipes: Recipe[];
 }
 
+/** Un restaurante auditado */
+export interface Client extends AppData {
+  id: string;
+}
+
+/** Quien hace la auditoría; aparece en el informe */
+export interface Consultant {
+  name: string;
+  phone: string;
+  email: string;
+}
+
+export interface Workspace {
+  activeId: string;
+  clients: Client[];
+  consultant: Consultant;
+}
+
 export type MenuClass = 'estrella' | 'caballo' | 'puzzle' | 'perro';

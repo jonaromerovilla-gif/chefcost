@@ -16,7 +16,9 @@ Lo creó un chef convertido en desarrollador.
 - **Pérdida recuperable:** cuánto dinero se escapa al mes por platos mal costeados.
 - **Matriz de ingeniería de menú** (Kasavana & Smith): Estrellas, Caballos, Puzzles y Perros, con recomendaciones.
 - **Simulador de precios de proveedores:** "si el aguacate sube 20 %, ¿qué pasa con mi margen?" (plan Mediano).
-- **Informe en PDF** listo para entregar al dueño.
+- **Informe de auditoría en PDF** con resumen ejecutivo, plan de acción priorizado por ganancia estimada y tus datos de consultor.
+- **Varios restaurantes** en una misma cuenta, para consultores que auditan a más de un cliente.
+- **Importación rápida:** pega platos o ingredientes directamente desde Excel o Google Sheets.
 - **Planes configurables** (Pequeño / Mediano / Grande) con límites y funciones por plan.
 
 ## Planes

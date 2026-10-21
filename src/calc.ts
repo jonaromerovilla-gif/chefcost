@@ -117,6 +117,73 @@ export const CLASS_INFO: Record<MenuClass, { label: string; color: string; advic
   },
 };
 
+/** Redondea hacia arriba a un precio "de carta" según la magnitud */
+export function menuPrice(value: number): number {
+  const step = value < 20 ? 0.5 : value < 200 ? 5 : 10;
+  return Math.ceil(value / step) * step;
+}
+
+/** Subida máxima de precio recomendada de una sola vez */
+const MAX_PRICE_RAISE = 0.15;
+
+export interface Action {
+  recipeName: string;
+  title: string;
+  detail: string;
+  /** Ganancia mensual estimada; 0 si no es cuantificable */
+  monthlyGain: number;
+}
+
+/** Plan de acción priorizado por impacto económico */
+export function actionPlan(a: MenuAnalysis, currency: string, target: number): Action[] {
+  const actions: Action[] = [];
+  for (const s of a.stats) {
+    if (!s.recipe.lines.length) continue;
+    const name = s.recipe.name;
+    if (s.foodCostPct > target) {
+      const t = target / 100;
+      const price = s.recipe.salePrice;
+      // Una subida mayor al tope espanta clientes: el resto se cubre bajando el costo
+      const cappedPrice = Math.min(menuPrice(s.suggestedPrice), menuPrice(price * (1 + MAX_PRICE_RAISE)));
+      const newPrice = Math.max(price, cappedPrice);
+      const targetCost = t * newPrice;
+      const needsCostCut = s.portionCost > targetCost + 0.005;
+      const raise = newPrice > price;
+      // Margen al llegar al objetivo con el precio nuevo, menos el margen actual
+      const gain = (newPrice - Math.min(s.portionCost, targetCost) - s.margin) * s.recipe.monthlySales;
+      const costText = `bajar su costo por porción de ${money(s.portionCost, currency)} a ${money(targetCost, currency)} ajustando gramajes o ingredientes`;
+      actions.push({
+        recipeName: name,
+        title: raise
+          ? `Subir ${name} de ${money(price, currency)} a ${money(newPrice, currency)}${needsCostCut ? ' y ajustar su receta' : ''}`
+          : `Ajustar la receta de ${name}`,
+        detail: needsCostCut
+          ? `${raise ? 'Además, ' : ''}${costText}, para llegar al ${target} % de food cost.`
+          : `Con este precio queda en el ${target} % de food cost o por debajo.`,
+        monthlyGain: gain,
+      });
+    } else if (s.menuClass === 'puzzle') {
+      // Si se vendiera hasta el umbral de popularidad, con el mismo margen
+      const totalSales = a.stats.reduce((t, x) => t + x.recipe.monthlySales, 0);
+      const extraSales = Math.max(0, (a.popularityThreshold / 100) * totalSales - s.recipe.monthlySales);
+      actions.push({
+        recipeName: name,
+        title: `Destacar ${name} en la carta`,
+        detail: 'Buen margen pero pocas ventas: recuadro en la carta, mejor foto o descripción, y que los meseros lo recomienden.',
+        monthlyGain: extraSales * s.margin,
+      });
+    } else if (s.menuClass === 'perro') {
+      actions.push({
+        recipeName: name,
+        title: `Rediseñar o retirar ${name}`,
+        detail: 'Se vende poco y deja poco margen. Libera espacio en la carta y en la cocina para platos más rentables.',
+        monthlyGain: 0,
+      });
+    }
+  }
+  return actions.sort((x, y) => y.monthlyGain - x.monthlyGain);
+}
+
 export function money(value: number, currency: string): string {
   try {
     return new Intl.NumberFormat('es', { style: 'currency', currency, maximumFractionDigits: 2 }).format(value);

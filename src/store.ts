@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { AppData } from './types';
+import type { AppData, Client, Workspace } from './types';
 
-const KEY = 'chefcost:data:v1';
+const KEY = 'chefcost:workspace:v2';
+const LEGACY_KEY = 'chefcost:data:v1';
 
 export const uid = () => crypto.randomUUID();
 
@@ -68,24 +69,48 @@ export function demoData(): AppData {
   };
 }
 
-function load(): AppData {
+export function emptyClient(businessName: string, base?: AppData): Client {
+  return {
+    id: uid(),
+    settings: { ...(base?.settings ?? demoData().settings), businessName },
+    ingredients: [],
+    recipes: [],
+  };
+}
+
+function load(): Workspace {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as AppData;
+    if (raw) return JSON.parse(raw) as Workspace;
+    // Migración desde la versión con un solo restaurante
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const client = { id: uid(), ...(JSON.parse(legacy) as AppData) };
+      return { activeId: client.id, clients: [client], consultant: { name: '', phone: '', email: '' } };
+    }
   } catch {
     // datos corruptos o almacenamiento bloqueado: empezamos con la demo
   }
-  return demoData();
+  const client = { id: uid(), ...demoData() };
+  return { activeId: client.id, clients: [client], consultant: { name: '', phone: '', email: '' } };
 }
 
-export function useAppData() {
-  const [data, setData] = useState<AppData>(load);
+export function useWorkspace() {
+  const [workspace, setWorkspace] = useState<Workspace>(load);
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify(data));
+      localStorage.setItem(KEY, JSON.stringify(workspace));
     } catch {
       // sin almacenamiento disponible, la app sigue funcionando en memoria
     }
-  }, [data]);
-  return [data, setData] as const;
+  }, [workspace]);
+
+  const data = workspace.clients.find((c) => c.id === workspace.activeId) ?? workspace.clients[0];
+  const setData = (fn: (d: AppData) => AppData) =>
+    setWorkspace((w) => ({
+      ...w,
+      clients: w.clients.map((c) => (c.id === data.id ? { ...fn(c), id: c.id } : c)),
+    }));
+
+  return { workspace, setWorkspace, data, setData };
 }

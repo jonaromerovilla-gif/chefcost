@@ -16,6 +16,12 @@ export function Dashboard({ data }: { data: AppData }) {
         </div>
       </header>
 
+      {a.stats.some((s) => !s.recipe.lines.length) && (
+        <p className="notice">
+          Hay platos sin escandallo: su costo cuenta como 0. Completa sus ingredientes en Recetas para que los números sean reales.
+        </p>
+      )}
+
       <div className="kpis">
         <Kpi label="Ventas al mes" value={money(a.totalRevenue, currency)} />
         <Kpi label="Costo de alimentos" value={money(a.totalCost, currency)} />

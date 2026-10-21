@@ -2,6 +2,7 @@ import type { AppData, Ingredient, PurchaseUnit } from '../types';
 import { costPerRecipeUnit, money, RECIPE_UNIT } from '../calc';
 import { uid } from '../store';
 import { NumField } from './ui';
+import { BulkImport } from './BulkImport';
 
 export function Ingredients({ data, setData }: { data: AppData; setData: (fn: (d: AppData) => AppData) => void }) {
   const { currency } = data.settings;
@@ -32,8 +33,11 @@ export function Ingredients({ data, setData }: { data: AppData; setData: (fn: (d
           <h2>Ingredientes</h2>
           <p className="muted">Precio de compra y merma. El costo útil se calcula solo.</p>
         </div>
-        <button className="primary" onClick={add}>+ Ingrediente</button>
+        <div className="row-actions">
+          <button className="primary" onClick={add}>+ Ingrediente</button>
+        </div>
       </header>
+      <BulkImport kind="ingredients" data={data} setData={setData} />
 
       <div className="table-wrap">
         <table>

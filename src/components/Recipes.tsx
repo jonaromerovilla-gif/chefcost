@@ -4,6 +4,7 @@ import { analyzeMenu, CLASS_INFO, costPerRecipeUnit, money, RECIPE_UNIT } from '
 import { PLANS } from '../plans';
 import { uid } from '../store';
 import { FoodCostTag, Kpi, NumField } from './ui';
+import { BulkImport } from './BulkImport';
 
 export function Recipes({ data, setData }: { data: AppData; setData: (fn: (d: AppData) => AppData) => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(data.recipes[0]?.id ?? null);
@@ -47,6 +48,7 @@ export function Recipes({ data, setData }: { data: AppData; setData: (fn: (d: Ap
         </div>
         <button className="primary" onClick={add}>+ Receta</button>
       </header>
+      <BulkImport kind="recipes" data={data} setData={setData} />
 
       <div className="split">
         <aside className="recipe-list">
@@ -60,7 +62,11 @@ export function Recipes({ data, setData }: { data: AppData; setData: (fn: (d: Ap
                 <strong>{s.recipe.name}</strong>
                 <small className="muted">{s.recipe.category}</small>
               </span>
-              <FoodCostTag value={s.foodCostPct} target={targetFoodCost} />
+              {s.recipe.lines.length ? (
+                <FoodCostTag value={s.foodCostPct} target={targetFoodCost} />
+              ) : (
+                <span className="tag warn">Sin escandallo</span>
+              )}
             </button>
           ))}
         </aside>

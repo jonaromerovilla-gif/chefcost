@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react';
-import type { AppData, PlanId, Settings as SettingsT } from '../types';
+import type { AppData, Client, Consultant, PlanId, Settings as SettingsT, Workspace } from '../types';
 import { money } from '../calc';
 import { PLANS } from '../plans';
 import { demoData } from '../store';
@@ -13,9 +13,28 @@ const PLAN_FEATURES: Record<PlanId, string[]> = {
   grande: ['Sucursales y usuarios ilimitados', 'Recetas ilimitadas', 'Todo lo del Mediano', 'Integración con POS (próximamente)', 'Soporte dedicado'],
 };
 
-export function Settings({ data, setData }: { data: AppData; setData: (fn: (d: AppData) => AppData) => void }) {
+export function Settings({ workspace, setWorkspace, data, setData }: {
+  workspace: Workspace;
+  setWorkspace: (fn: (w: Workspace) => Workspace) => void;
+  data: Client;
+  setData: (fn: (d: AppData) => AppData) => void;
+}) {
   const s = data.settings;
   const set = (patch: Partial<SettingsT>) => setData((d) => ({ ...d, settings: { ...d.settings, ...patch } }));
+  const setConsultant = (patch: Partial<Consultant>) =>
+    setWorkspace((w) => ({ ...w, consultant: { ...w.consultant, ...patch } }));
+
+  const deleteClient = () => {
+    if (workspace.clients.length < 2) {
+      alert('Debe quedar al menos un restaurante.');
+      return;
+    }
+    if (!confirm(`¿Eliminar "${s.businessName}" y todas sus recetas? Exporta un respaldo antes si lo necesitas.`)) return;
+    setWorkspace((w) => {
+      const clients = w.clients.filter((c) => c.id !== data.id);
+      return { ...w, clients, activeId: clients[0].id };
+    });
+  };
 
   const exportJson = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -55,6 +74,14 @@ export function Settings({ data, setData }: { data: AppData; setData: (fn: (d: A
         <label>Food cost objetivo (%)<NumField value={s.targetFoodCost} onChange={(v) => set({ targetFoodCost: v })} /></label>
       </div>
 
+      <h3>Tu perfil de consultor</h3>
+      <p className="muted small">Aparece en todos los informes que entregues. Se comparte entre todos tus restaurantes.</p>
+      <div className="card grid-fields">
+        <label>Nombre<input value={workspace.consultant.name} placeholder="Ej.: Chef Jonathan Romero" onChange={(e) => setConsultant({ name: e.target.value })} /></label>
+        <label>Teléfono / WhatsApp<input value={workspace.consultant.phone} onChange={(e) => setConsultant({ phone: e.target.value })} /></label>
+        <label>Email<input type="email" value={workspace.consultant.email} onChange={(e) => setConsultant({ email: e.target.value })} /></label>
+      </div>
+
       <h3>Plan</h3>
       <div className="plans">
         {Object.values(PLANS).map((p) => (
@@ -78,6 +105,7 @@ export function Settings({ data, setData }: { data: AppData; setData: (fn: (d: A
         <button className="ghost danger" onClick={() => confirm('¿Reemplazar todo con los datos de demostración?') && setData(() => demoData())}>
           Restaurar demo
         </button>
+        <button className="ghost danger" onClick={deleteClient}>Eliminar este restaurante</button>
       </div>
     </section>
   );
